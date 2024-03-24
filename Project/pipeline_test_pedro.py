@@ -90,39 +90,34 @@ def main():
         # Apply the reduce_brightness_and_shadows function
         results = reduce_brightness_and_shadows(image)
 
-        cv2.imshow("Original", image)
-        # cv2.imshow("Equalized", results[0])
-        cv2.imshow("Corrected", results[1])
-
         # Detect keypoints and descriptors
 
         keypoints1, descriptors1 = detect_keypoints(image)
         keypoints2, descriptors2 = detect_keypoints(results[1])
 
-        # Match keypoints
+        # Match keypoints in original image
 
         matches = match_keypoints(descriptors1, descriptors2)
 
-        # Draw matches
-
-        result = draw_matches(image, keypoints1, results[1], keypoints2, matches)
-
-         # RANSAC
+        # Apply RANSAC algorithm
 
         matches_mask = ransac(matches, keypoints1, keypoints2)
 
-        # Cluster keypoints to detect LEGO bricks
+        # Cluster keypoints
 
         num_bricks = cluster_keypoints(keypoints1, matches_mask)
 
-        print(f"Number of LEGO bricks detected: {num_bricks}")
+        # Higlight the bricks found in the image and display the result
 
-        # Draw RANSAC matches and display the result
+        for i, match in enumerate(matches_mask):
+            if match == 1:
+                x, y = keypoints1[i].pt
+                cv2.circle(image, (int(x), int(y)), 3, (0, 255, 0), -1)
 
-        draw_params = dict(matchColor=(0, 255, 0), singlePointColor=None, matchesMask=matches_mask, flags=2)
-        result = cv2.drawMatches(image, keypoints1, results[1], keypoints2, matches, None, **draw_params)
+        cv2.imshow("Result", image)
 
-        cv2.imshow("Matches", result)
+        print(f"File: {filename}, Number of Lego Bricks: {num_bricks}")
+
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
