@@ -5,6 +5,30 @@ import numpy as np
 import os
 import random
 
+# FILTERING
+# Reduce brightness and shadow effects
+
+def reduce_brightness_and_shadows(image):
+    
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Apply histogram equalization
+    equalized = cv2.equalizeHist(gray)
+
+    # Define the gamma value for gamma correction (adjust as needed)
+    gamma = 0.5
+
+    # Apply gamma correction
+    corrected = np.uint8(((gray / 255.0) ** gamma) * 255)
+
+    # Convert to BGR
+
+    equalized = cv2.cvtColor(equalized, cv2.COLOR_GRAY2BGR)
+
+    return [equalized, corrected]
+
+
 def detect_lego_bricks(image, margin=1):
 
     height, width = image.shape[:2]
@@ -104,18 +128,20 @@ def main():
 
         image_resized = cv2.resize(image, (0, 0), fx=0.2, fy=0.2)
 
-        preprocessed_image = preprocess_image(image_resized)
+        # preprocessed_image = preprocess_image(image_resized)
 
-        brick_boxes = detect_lego_bricks(preprocessed_image)
+        enhanced_image = reduce_brightness_and_shadows(image_resized)[0]
+
+        brick_boxes = detect_lego_bricks(enhanced_image)
 
         num_bricks = len(brick_boxes)
 
         if num_bricks < 3:
 
-            num_colors, brick_colors = detect_colors_hsv(preprocessed_image, brick_boxes)
+            num_colors, brick_colors = detect_colors_hsv(enhanced_image, brick_boxes)
 
         else:
-            num_colors, brick_colors = detect_colors_hsv(preprocessed_image, brick_boxes, threshold=100)
+            num_colors, brick_colors = detect_colors_hsv(enhanced_image, brick_boxes, threshold=100)
 
         print(f"File: {filename}, Number of Lego Bricks: {num_bricks}, Number of Colors: {num_colors}")
 
@@ -125,11 +151,11 @@ def main():
                 
                 x, y, w, h = box
                     
-                cv2.rectangle(preprocessed_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.rectangle(enhanced_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                cv2.putText(preprocessed_image, f"{w*h} mm^2", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(enhanced_image, f"{w*h} mm^2", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        cv2.imshow("Result", preprocessed_image)
+        cv2.imshow("Result", enhanced_image)
 
         cv2.waitKey(0)
 
