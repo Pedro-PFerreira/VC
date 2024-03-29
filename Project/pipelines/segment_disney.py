@@ -3,7 +3,7 @@ import os
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-from test.testing import test
+from testing.testing import test, compute_testing_score
 
 def get_random_image(folder_path):
     image_files = [
@@ -14,34 +14,19 @@ def get_random_image(folder_path):
     random_image = random.choice(image_files)
     return os.path.join(folder_path, random_image)
 
-
-def remove_background(image_path, background_color):
-    image = cv2.imread(image_path)
+def remove_background(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    diff_image = cv2.absdiff(background_color, gray)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, threshold_img = cv2.threshold(blur, 50, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    mask = 255 - threshold_img
+    result = cv2.bitwise_and(image, image, mask=mask)
 
-    blurred = cv2.GaussianBlur(diff_image, (5, 5), 0)
-
-    # Apply adaptive thresholding
-    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-    return thresh
-
-
-def get_background_color(image_path):
-    image = cv2.imread(image_path)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    hist = cv2.calcHist([blurred], [0], None, [256], [0, 256])
-    background_color = np.argmax(hist) / 255.0  # Normalize to range [0, 1]
-    return background_color
-
+    return result
 
 def get_image_dimensions(image_path):
     image = cv2.imread(image_path)
     height, width, _ = image.shape
     return width, height
-
 
 def plot_image(image, title):
 
@@ -50,6 +35,8 @@ def plot_image(image, title):
     cv2.imshow(title, image_resized)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+    return image_resized
 
 def validate_countours(image):
 
@@ -79,61 +66,67 @@ folder_path = "samples"
 # Get random image
 random_image_path = get_random_image(folder_path)
 
-# Get background color
-background_color = get_background_color(random_image_path)
+# Display the random image
+
+image = cv2.imread(random_image_path)
+image_resized = cv2.resize(image, (0, 0), fx=0.2, fy=0.2)
 
 # Remove background from the original image
-removed_background = remove_background(random_image_path, background_color)
+removed_background = remove_background(image_resized)
 
-# Find contours on the remaining objects
-contours, _ = cv2.findContours(
-    removed_background, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-)
+cv2.imshow("Removed Background", removed_background)
 
-# Draw contours on the original image
-original_image = cv2.imread(random_image_path)
+# # Find contours on the remaining objects
+# contours, _ = cv2.findContours(
+#     removed_background, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+# )
 
-cv2.drawContours(original_image, contours, -1, (0, 255, 0), 2)
+# # Draw contours on the original image
+# original_image = cv2.imread(random_image_path)
 
-# Display the original image with contours
-plot_image(
-    cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), "Original Image with Contours"
-)
+# cv2.drawContours(original_image, contours, -1, (0, 255, 0), 2)
 
-# Make the bounding box of the contours
+# # Display the original image with contours
+# plot_image(
+#     cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), "Original Image with Contours"
+# )
 
-# Create a copy of the original image
-bounding_box_image = original_image.copy()
-brick_boxes = []
+# # Make the bounding box of the contours
 
-valid_contours = validate_countours(bounding_box_image)
+# # Create a copy of the original image
+# bounding_box_image = original_image.copy()
+# brick_boxes = []
 
-for i in valid_contours:
-    cv2.drawContours(bounding_box_image, contours, i, (0, 255, 0), 2)
-    x, y, w, h = cv2.boundingRect(contours[i])
-    cv2.rectangle(bounding_box_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
-    brick_boxes.append((x, y, w, h))
+# valid_contours = validate_countours(bounding_box_image)
 
-# Display the original image with bounding boxes
+# for i in valid_contours:
+#     cv2.drawContours(bounding_box_image, contours, i, (0, 255, 0), 2)
+#     x, y, w, h = cv2.boundingRect(contours[i])
+#     cv2.rectangle(bounding_box_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+#     brick_boxes.append((x, y, w, h))
+
+# # Display the original image with bounding boxes
     
-plot_image(
-    cv2.cvtColor(bounding_box_image, cv2.COLOR_BGR2RGB), "Original Image with Bounding Boxes"
-)
+# plot_image(
+#     cv2.cvtColor(bounding_box_image, cv2.COLOR_BGR2RGB), "Original Image with Bounding Boxes"
+# )
 
-# Number of different colors found
-unique_colors = set()
+# # Number of different colors found
+# unique_colors = set()
 
-for box in brick_boxes:
-    x, y, w, h = box
-    brick_roi = removed_background[y : y + h, x : x + w]
-    colors = np.unique(brick_roi)
-    unique_colors.update(colors)
+# for box in brick_boxes:
+#     x, y, w, h = box
+#     brick_roi = removed_background[y : y + h, x : x + w]
+#     colors = np.unique(brick_roi)
+#     unique_colors.update(colors)
 
-num_colors = len(unique_colors)
+# num_colors = len(unique_colors)
 
-test(random_image_path, len(brick_boxes), num_colors)
+# test(random_image_path, len(brick_boxes), num_colors)
 
-# Print image information
-print("Random Image:", random_image_path)
-print("Background Color (Gray):", background_color)
-print("Image Dimensions:", get_image_dimensions(random_image_path))
+# # Print image information
+# print("Random Image:", random_image_path)
+# print("Image Dimensions:", get_image_dimensions(random_image_path))
+
+
+# compute_testing_score()

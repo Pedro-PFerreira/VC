@@ -3,8 +3,7 @@ import os
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-from test.testing import test
-
+from testing.testing import test, compute_testing_score
 
 def get_random_image(folder_path):
     image_files = [
@@ -105,7 +104,8 @@ print("Image Dimensions:", get_image_dimensions(random_image_path))
 print("Number of Bricks:", brick_count)
 print("Brick Colors (BGR):", len(brick_colors))
 
-test(random_image_path, brick_count, brick_colors)
+test(random_image_path, brick_count, len(brick_colors))
+compute_testing_score()
 
 plot_image(
     cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB),
