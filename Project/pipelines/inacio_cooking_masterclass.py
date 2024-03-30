@@ -5,7 +5,7 @@ import numpy as np
 def threshold_bricks(image_path):
     image = cv2.imread(image_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    denoised = cv2.medianBlur(gray, 25)
+    denoised = cv2.medianBlur(gray, 35)
     smoothed = cv2.bilateralFilter(denoised, 3, 3, 5)
     thresholded = cv2.adaptiveThreshold(
         smoothed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 5, 1
