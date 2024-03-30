@@ -2,7 +2,6 @@ import cv2
 import os
 import numpy as np
 
-
 def threshold_bricks(image_path):
     image = cv2.imread(image_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -35,10 +34,14 @@ for filename in os.listdir(folder_path):
         combined_image = cv2.bitwise_or(
             thresholded_image, cv2.cvtColor(segmented_image, cv2.COLOR_BGR2GRAY)
         )
+
+        kernel = np.ones((5, 5), np.uint8)
+        combined_image = cv2.dilate(combined_image, kernel, iterations=1)
+
         contours, _ = cv2.findContours(
             combined_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
-        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 250]
+        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 8000]
         mask = np.zeros_like(combined_image)
         cv2.drawContours(mask, filtered_contours, -1, (255), thickness=cv2.FILLED)
         result_image = cv2.bitwise_and(combined_image, mask)
@@ -52,11 +55,34 @@ for filename in os.listdir(folder_path):
             flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
         )
         result_with_contours = original_image.copy()
+
+        # Calculate and draw new countours on the original image
+        original_image = cv2.imread(image_path)
+        gray_original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+
+        _, thresholded_original_image = cv2.threshold(
+            gray_original_image, 50, 255, cv2.THRESH_BINARY_INV
+        )
+        contours_2, _ = cv2.findContours(thresholded_original_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Draw bounding boxes around the bricks
+        brick_boxes = []
+
+        for i in range(len(filtered_contours)):
+            x, y, w, h = cv2.boundingRect(filtered_contours[i])
+
+            cv2.rectangle(result_with_contours, (x, y), (x + w, y + h), (0, 0, 255), 10)
+            brick_boxes.append((x, y, w, h))
+
         cv2.drawContours(result_with_contours, filtered_contours, -1, (0, 255, 0), 2)
+
         resized_result = cv2.resize(
             np.hstack([result_with_keypoints, result_with_contours]), (800, 400)
         )  # Resize the image
+
+        # Display the result
+        print("Number of bricks: ", len(brick_boxes))
+        
         cv2.imshow("Result with Keypoints and Contours", resized_result)
         cv2.waitKey(0)
-
 cv2.destroyAllWindows()

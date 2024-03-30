@@ -5,22 +5,21 @@ import numpy as np
 def threshold_bricks(image_path):
     image = cv2.imread(image_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    denoised = cv2.medianBlur(gray, 15)
-    smoothed = cv2.bilateralFilter(denoised, 9, 75, 75)
+    denoised = cv2.medianBlur(gray, 25)
+    smoothed = cv2.bilateralFilter(denoised, 3, 3, 5)
     thresholded = cv2.adaptiveThreshold(
-        smoothed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
+        smoothed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 5, 1
     )
     return thresholded
 
 def segment_light_artifacts(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     lower_yellow = np.array([20, 150, 150])
-    upper_yellow = np.array([120, 250, 250])
+    upper_yellow = np.array([120, 250, 255])
     mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
     masked_image = cv2.bitwise_and(image, image, mask=mask)
     blurred_masked_image = cv2.medianBlur(masked_image, 11)
     return blurred_masked_image
-
 
 folder_path = "samples"
 
@@ -33,10 +32,14 @@ for filename in os.listdir(folder_path):
         combined_image = cv2.bitwise_or(
             thresholded_image, cv2.cvtColor(segmented_image, cv2.COLOR_BGR2GRAY)
         )
+
+        kernel = np.ones((5, 5), np.uint8)
+        combined_image = cv2.dilate(combined_image, kernel, iterations=1)
+
         contours, _ = cv2.findContours(
             combined_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
-        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 500]
+        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 9000]
         mask = np.zeros_like(combined_image)
         cv2.drawContours(mask, filtered_contours, -1, (255), thickness=cv2.FILLED)
         result_image = cv2.bitwise_and(combined_image, mask)
@@ -59,8 +62,6 @@ for filename in os.listdir(folder_path):
             gray_original_image, 50, 255, cv2.THRESH_BINARY_INV
         )
         contours_2, _ = cv2.findContours(thresholded_original_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        
 
         # Draw bounding boxes around the bricks
         brick_boxes = []
