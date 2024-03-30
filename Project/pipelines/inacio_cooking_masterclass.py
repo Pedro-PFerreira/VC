@@ -6,7 +6,7 @@ def threshold_bricks(image_path):
     image = cv2.imread(image_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     denoised = cv2.medianBlur(gray, 35)
-    smoothed = cv2.bilateralFilter(denoised, 3, 3, 5)
+    smoothed = cv2.bilateralFilter(denoised, -1, 3, 3)
     thresholded = cv2.adaptiveThreshold(
         smoothed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 5, 1
     )
@@ -14,12 +14,11 @@ def threshold_bricks(image_path):
 
 def segment_light_artifacts(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    lower_yellow = np.array([20, 150, 150])
-    upper_yellow = np.array([120, 250, 255])
-    mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    lower = np.array([0, 220, 0])
+    upper = np.array([255, 240, 255])
+    mask = cv2.inRange(hsv, lower, upper)
     masked_image = cv2.bitwise_and(image, image, mask=mask)
-    blurred_masked_image = cv2.medianBlur(masked_image, 11)
-    return blurred_masked_image
+    return masked_image
 
 folder_path = "samples"
 
