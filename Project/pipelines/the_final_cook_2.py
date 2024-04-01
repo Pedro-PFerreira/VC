@@ -43,20 +43,14 @@ def get_dominant_color(image):
     return dominant_color.astype(int)
 
 
-def color_similarity(colors, h_threshold=10, v_threshold=25):
-
-    colors_hsv = [
-        cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0] for color in colors
-    ]
-
+def color_similarity(colors, threshold=15):
     unique_colors = set()
-    for color in colors_hsv:
+    for color in colors:
         found_similar = False
         for existing_color in unique_colors:
-            h_diff = abs(int(existing_color[0]) - int(color[0]))
-            v_diff = abs(int(existing_color[2]) - int(color[2]))
-            if h_diff <= h_threshold and v_diff <= v_threshold:
+            if all(abs(existing_color[i] - color[i]) <= threshold for i in range(3)):
                 found_similar = True
+                break
         if not found_similar:
             unique_colors.add(tuple(color))
     return len(unique_colors)
@@ -105,15 +99,7 @@ for filename in os.listdir(folder_path):
         mask = np.zeros_like(combined_image)
         cv2.drawContours(mask, filtered_contours, -1, (255), thickness=cv2.FILLED)
         result_image = cv2.bitwise_and(combined_image, mask)
-        orb = cv2.ORB_create()
-        keypoints = orb.detect(result_image, None)
-        result_with_keypoints = cv2.drawKeypoints(
-            result_image,
-            keypoints,
-            None,
-            color=(0, 255, 0),
-            flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
-        )
+        result_image = cv2.cvtColor(result_image, cv2.COLOR_GRAY2BGR)
         result_with_contours = original_image.copy()
 
         all_brick_boxes = []
@@ -178,7 +164,7 @@ for filename in os.listdir(folder_path):
 
         color_squares_image = display_color_squares(dominant_colors)
         resized_result = cv2.resize(
-            np.hstack([result_with_keypoints, result_with_contours]), (800, 400)
+            np.hstack([result_image, result_with_contours]), (800, 400)
         )
 
         color_squares_resized = cv2.resize(
