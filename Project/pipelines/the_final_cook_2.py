@@ -3,6 +3,7 @@ import os
 import numpy as np
 from sklearn.cluster import KMeans
 from testing.testing import test, compute_testing_score
+import json
 
 
 def overlap_area(rect1, rect2):
@@ -75,10 +76,9 @@ def display_color_squares(colors, square_size=50, spacing=10):
         )
     return window
 
-
 folder_path = "samples"
 
-for filename in os.listdir(folder_path):
+for filename in folder_path:
     if filename.endswith(".jpg") or filename.endswith(".png"):
         image_path = os.path.join(folder_path, filename)
         thresholded_image = threshold_bricks(image_path)
