@@ -88,6 +88,8 @@ def run(display_images=False):
             image_path = os.path.join(folder_path, filename)
             thresholded_image = threshold_bricks(image_path)
             original_image = cv2.imread(image_path)
+
+            # Apply light artifact segmentation
             segmented_image = segment_light_artifacts(original_image)
 
             combined_image = cv2.bitwise_or(
