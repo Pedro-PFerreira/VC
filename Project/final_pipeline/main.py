@@ -3,6 +3,7 @@ import os
 import numpy as np
 from sklearn.cluster import KMeans
 import json
+import sys
 
 # This method is used to calculate the overlap area between two rectangles, 
 # so that it can be used to filter out the overlapping bricks (when it detects an area inside another, which is usually an incorrect detection).
@@ -80,7 +81,7 @@ def display_color_squares(colors, square_size=50, spacing=10):
 
 # IMAGE PROCESSING PIPELINE
 
-def run(display_images=False):
+def run(folder_path, input_files, display_images=False):
     for filename in input_files:
         if filename.endswith(".jpg") or filename.endswith(".png"):
             
@@ -174,8 +175,6 @@ def run(display_images=False):
                 dominant_colors.append(dominant_color)
                 num_colors = color_similarity(dominant_colors)
 
-            
-            
             # Append the results for the output JSON
             results.append({
                 "file_name": filename,
@@ -185,7 +184,6 @@ def run(display_images=False):
                     {"xmin": x, "ymin": y, "xmax": x + w, "ymax": y + h} for x, y, w, h in final_brick_boxes
                 ]
             })
-
 
             if display_images:
                 color_squares_image = display_color_squares(dominant_colors)
@@ -204,23 +202,27 @@ def run(display_images=False):
                 cv2.imshow("Result", stacked_image)
                 cv2.waitKey(0)
         
-# Get input data, obtained in JSON format
-with open("./input.json", "r") as file:
-    input_files = json.load(file)["image_files"]
-    file.close()
-    
-results = []
 
-folder_path = "samples"
-
-# Set to true to display the results:
-run(display_images=True)
-        
-output_json = {"results": results}
-output_filename = "output.json"
+if (__name__ == "__main__"):
+    # Get input data, obtained in JSON format
+    with open("./input.json", "r") as file:
+        input_files = json.load(file)["image_files"]
+        file.close()
 
 
-with open(output_filename, "w") as outfile:
-    json.dump(output_json, outfile, indent=2)
+    folder_path = ""
+    if len(sys.argv) >= 2:
+        folder_path = sys.argv[1]
 
-cv2.destroyAllWindows()
+    results = []
+
+
+    # Set to true to display the results:
+    run(folder_path, input_files, display_images=False)
+            
+    output_json = {"results": results}
+    output_filename = "output.json"
+
+
+    with open(output_filename, "w") as outfile:
+        json.dump(output_json, outfile, indent=2)
